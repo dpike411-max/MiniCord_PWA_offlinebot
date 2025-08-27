@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>MiniCord</title>
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">MiniCord</div>
+    <div class="room-controls">
+      <button id="newRoomBtn" class="btn">New Room</button>
+      <button id="copyLinkBtn" class="btn">Invite</button>
+      <button id="installBtn" class="btn outline">Install</button><button id="botBtn" class="btn">Chatbot</button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="section-title">Rooms</div>
+      <ul id="rooms"></ul>
+      <div class="hint">Tip: share this page URL to invite friends to your current room.</div>
+    </aside>
+
+    <section class="chat">
+      <div class="channel-header">
+        <div class="channel-name" id="roomName">#general</div>
+        <div class="presence" id="presence">local-only</div>
+      </div>
+
+      <div id="messages" class="messages" role="log" aria-live="polite"></div>
+
+      <form id="composer" class="composer" autocomplete="off">
+        <input id="name" class="name" placeholder="name (optional)" maxlength="24">
+        <input id="input" class="input" placeholder="Message…" maxlength="500" required>
+        <button class="send" aria-label="Send">Send</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>Front‑end only demo. Messages are saved on your device. To chat across devices, host this and share the link containing the room ID.</div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
