@@ -1,0 +1,96 @@
+(() => {
+  const botArea = document.getElementById('botArea');
+  const form = document.getElementById('botForm');
+  const input = document.getElementById('botInput');
+
+  const KEY = 'minicord:bot:conv';
+
+  function loadConv(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } }
+  function saveConv(c){ localStorage.setItem(KEY, JSON.stringify(c)); }
+
+  function render(){
+    botArea.innerHTML = '';
+    const conv = loadConv();
+    conv.forEach(m => {
+      const el = document.createElement('div');
+      el.style.marginBottom = '10px';
+      el.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:4px">${m.role}</div>
+        <div style="padding:10px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(148,163,184,.06)">` + escapeHtml(m.text) + '</div>';
+      botArea.appendChild(el);
+    });
+    botArea.scrollTop = botArea.scrollHeight;
+  }
+
+  function escapeHtml(s){ return s.replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+  // Simple rule-based responder + fallback generator
+  function offlineRespond(message){
+    const m = message.toLowerCase();
+    // Quick pattern matches
+    if(/\bhello\b|\bhi\b|\bhey\b/.test(m)) return "Hi! I'm an offline assistant. How can I help today?";
+    if(/\bhelp\b|\bwhat can you do\b/.test(m)) return "I can chat, answer simple questions, and help with formatting or ideas. I don't have internet access from here.";
+    if(/\btime\b/.test(m)) return `Current local time: ${new Date().toLocaleString()}`;
+    if(/\bweather\b/.test(m)) return "I can't fetch live weather offline, but I can help you interpret forecasts if you paste them.";
+    if(/\bdefine\b/.test(m)) return "Give me a short term to define (e.g., 'define recursion').";
+    if(/\btranslate to\b/.test(m)) return "Tell me the sentence and the language you'd like.";
+
+    // Fallback: simple template-based "creative" reply
+    // This gives varied but safe outputs that *sound* generative without external models.
+    const templates = [
+      "Interesting! Here's one way to think about that: {explain}.",
+      "Good question — a concise answer is: {short}. If you want more detail, tell me.",
+      "I don't have live data, but I can help you plan or reason about it. For example: {example}.",
+      "Here's a step-by-step you can try: {steps}.",
+      "I might be missing context. Could you say more or give an example?"
+    ];
+
+    function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+    // Generate some placeholders
+    const explain = "break the problem into smaller pieces and tackle one part at a time";
+    const short = "try starting with a small prototype and iterate";
+    const example = "if this is about design, sketch three versions and pick the best";
+    const steps = "1) define the goal 2) make a tiny prototype 3) test and repeat";
+
+    const template = pick(templates);
+    return template.replace("{explain}", explain).replace("{short}", short).replace("{example}", example).replace("{steps}", steps);
+  }
+
+  // Connector stub: later you can replace this to call a local LLM or API.
+  async function generateResponse(message){
+    // If you later run a local server (e.g., at http://localhost:8000/), change this function
+    // to call that server and return its reply. For now, we use offlineRespond.
+    return offlineRespond(message);
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if(!text) return;
+    const conv = loadConv();
+    conv.push({ role: 'You', text });
+    saveConv(conv);
+    render();
+    input.value = '';
+    // bot typing indicator
+    const typing = { role: 'Bot', text: '...' };
+    conv.push(typing);
+    saveConv(conv); render();
+    // generate
+    const reply = await generateResponse(text);
+    // replace typing with reply
+    const c2 = loadConv();
+    c2.pop();
+    c2.push({ role: 'Bot', text: reply });
+    saveConv(c2);
+    render();
+  });
+
+  // Wire "Back" button for SPA-like behavior on hash navigation
+  document.addEventListener('click', (e) => {
+    if(e.target && e.target.id === 'backBtn'){ location.href = './index.html'; }
+  });
+
+  // Initial render
+  render();
+})();
