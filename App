@@ -1,0 +1,157 @@
+(() => {
+  // PWA install prompt handling
+  let deferredPrompt = null;
+  const installBtn = document.getElementById('installBtn');
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); deferredPrompt = e; installBtn.style.display='inline-block';
+  });
+  installBtn?.addEventListener('click', async () => {
+    if(!deferredPrompt) { alert('Add to Home Screen from Safari Share menu.'); return; }
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    installBtn.style.display='none';
+  });
+
+  // Service worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js');
+    });
+  }
+
+  // Minimal state
+  const $ = (sel) => document.querySelector(sel);
+  const messagesEl = $('#messages');
+  const roomsEl = $('#rooms');
+  const roomNameEl = $('#roomName');
+  const presenceEl = $('#presence');
+  const nameInput = $('#name');
+  const input = $('#input');
+  const form = $('#composer');
+  const copyLinkBtn = $('#copyLinkBtn');
+  const newRoomBtn = $('#newRoomBtn');
+
+  // Derive room from URL hash
+  function currentRoomId(){
+    const id = location.hash.replace('#','').trim();
+    return id || 'general';
+  }
+
+  function roomStorageKey(room){ return 'minicord:room:' + room; }
+  function roomsKey(){ return 'minicord:rooms'; }
+
+  function loadRooms(){
+    const fallback = ['general','games','music'];
+    try { return JSON.parse(localStorage.getItem(roomsKey())) || fallback; }
+    catch { return fallback; }
+  }
+  function saveRooms(list){
+    localStorage.setItem(roomsKey(), JSON.stringify([...new Set(list)]));
+  }
+
+  function loadMessages(room){
+    try { return JSON.parse(localStorage.getItem(roomStorageKey(room))) || []; }
+    catch { return []; }
+  }
+  function saveMessages(room, msgs){
+    localStorage.setItem(roomStorageKey(room), JSON.stringify(msgs));
+  }
+
+  function renderRooms(){
+    const cur = currentRoomId();
+    roomsEl.innerHTML = '';
+    const list = loadRooms();
+    list.forEach(r => {
+      const li = document.createElement('li');
+      li.className = (r === cur ? 'active' : '');
+      li.innerHTML = '<span class="title">#'+ r +'</span><span class="badge">local</span>';
+      li.addEventListener('click', () => { location.hash = r; });
+      roomsEl.appendChild(li);
+    });
+  }
+
+  function renderMessages(){
+    const room = currentRoomId();
+    roomNameEl.textContent = '#' + room;
+    const msgs = loadMessages(room);
+    messagesEl.innerHTML = '';
+    msgs.forEach(appendMessage);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function appendMessage(msg){
+    const row = document.createElement('div');
+    row.className = 'msg';
+    const initials = (msg.name || 'You').slice(0,2).toUpperCase();
+    row.innerHTML = \`
+      <div class="avatar">\${initials}</div>
+      <div class="bubble">
+        <div class="meta">\${msg.name || 'You'} • \${new Date(msg.ts).toLocaleTimeString()}</div>
+        <div class="text"></div>
+      </div>\`;
+    row.querySelector('.text').textContent = msg.text;
+    messagesEl.appendChild(row);
+  }
+
+  // Initial render
+  renderRooms();
+  renderMessages();
+  presenceEl.textContent = 'local-only';
+
+  // Handle composing
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = (input.value || '').trim();
+    if(!text) return;
+    const msg = { name: (nameInput.value||'You'), text, ts: Date.now() };
+    const room = currentRoomId();
+    const msgs = loadMessages(room);
+    msgs.push(msg);
+    saveMessages(room, msgs);
+    appendMessage(msg);
+    input.value='';
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  });
+
+  // Room changes
+  window.addEventListener('hashchange', () => {
+    const list = loadRooms();
+    const cur = currentRoomId();
+    if(!list.includes(cur)) { list.push(cur); saveRooms(list); }
+    renderRooms();
+    renderMessages();
+  });
+
+  // Copy invite link
+  copyLinkBtn.addEventListener('click', async () => {
+    // Create a room id if none
+    const cur = currentRoomId() || 'general';
+    if(cur === 'general') {
+      const rnd = Math.random().toString(36).slice(2,8);
+      location.hash = rnd;
+    }
+    const url = location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      copyLinkBtn.textContent = 'Copied!';
+      setTimeout(() => copyLinkBtn.textContent = 'Invite', 1300);
+    } catch {
+      alert('Link: ' + url);
+    }
+  });
+
+  // New room
+  newRoomBtn.addEventListener('click', () => {
+    const id = prompt('New room name (letters, numbers, dashes):', '');
+    if(!id) return;
+    const clean = id.replace(/[^a-z0-9-]/gi, '').toLowerCase();
+    if(!clean) return;
+    location.hash = clean;
+  });
+
+  // Open offline chatbot
+  const botBtn = document.getElementById('botBtn');
+  botBtn?.addEventListener('click', () => { location.href = './bot.html'; });
+
+})();
