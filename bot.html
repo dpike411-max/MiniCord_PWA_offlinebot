@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>MiniCord — Offline Chatbot</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="theme-color" content="#0f172a">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">MiniCord • Bot</div>
+    <div class="room-controls">
+      <a href="./index.html" class="btn outline" id="backBtn">Back</a>
+      <button id="installBtn" class="btn outline">Install</button>
+    </div>
+  </header>
+
+  <main style="padding:12px;max-width:900px;margin:0 auto">
+    <section style="background:var(--panel);padding:12px;border-radius:12px;margin-top:12px">
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+        <div style="font-weight:800">Offline Chatbot</div>
+        <div style="color:var(--muted);font-size:13px">Runs entirely in your browser — not as capable as ChatGPT but works offline.</div>
+      </div>
+
+      <div id="botArea" style="height:60vh;overflow:auto;padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.01),transparent)"></div>
+
+      <form id="botForm" style="display:flex;gap:8px;margin-top:12px">
+        <input id="botInput" placeholder="Ask the bot something..." style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(148,163,184,.12);background:rgba(255,255,255,.03);color:var(--text)" required>
+        <button class="btn" type="submit">Send</button>
+      </form>
+
+      <div style="margin-top:8px;color:var(--muted);font-size:13px">
+        Tip: this offline bot is modular — if later you run a local LLM server, you can switch the connector to call it.
+      </div>
+    </section>
+  </main>
+
+  <script src="bot.js"></script>
+</body>
+</html>
